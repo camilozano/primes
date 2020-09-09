@@ -3,7 +3,7 @@ use std::sync::mpsc;
 use std::thread;
 
 
-fn sieve(from:usize, to:usize) -> Vec<usize>{
+fn sieve(from:usize, to:usize, tx: Sender<usize>) -> i32 {
 
     let mut is_prime = vec![true; to+1];
     let sqrtlmt = (to as f64).sqrt() as usize +1;
@@ -25,31 +25,58 @@ fn sieve(from:usize, to:usize) -> Vec<usize>{
         }
     }
 
-    let mut prime_list = Vec::new();
+    let mut count = 0;
     for i in from..is_prime.len() {
         if is_prime[i] {
-            prime_list.push(i);
+            count += 1;
+            tx.send(i).unwrap();
         }
     }
-    prime_list
+    count
 }
 
-static NTHREADS: i32 = 3;
+static NTHREADS: i32 = 8;
 fn main() {
     
     let upper = 100000000;
     let div = upper/(NTHREADS as usize);
-    let mut count = 0;
+    let mut count: u32 = 0;
+
+    let (tx, rx): (Sender<usize>, Receiver<usize>) = mpsc::channel();
+    let mut children = Vec::new();
 
 
     for i in (0..upper).step_by(div){
+        let thread_tx = tx.clone();
         let from = i;
         let to = i+div-1;
-        count += sieve(from, to).len();
+
+        let child = thread::spawn(move || {
+            let count = sieve(from,to,thread_tx);
+            println!("{}\tThread {} finished", count,i);
+        });
+        children.push(child);
     }
+
+
+    for child in children {
+        child.join().expect("oops! the child thread panicked");
+    }
+    
+
+    let mut list = Vec::new();
+    drop(tx);
+    for val in rx{
+        count += 1;
+        list.push(val)
+    }
+
+    list.sort();
 
     println!("{}",count);
 
+    }
 
 
-}
+
+
