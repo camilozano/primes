@@ -1,6 +1,6 @@
 
 
-fn block_sieve(from: i32, to: i32)-> i32 {
+fn block_sieve(from: i32, to: i32)-> (i32,Vec<bool>) {
 
     let memory_size = ((to-from+1)/2) as usize;
     let mut is_prime: Vec<bool> = vec![true;memory_size];
@@ -33,15 +33,31 @@ fn block_sieve(from: i32, to: i32)-> i32 {
     for i in 0..memory_size {
         found += is_prime[i] as i32;
     }
-    if from <= 2 {found += 1}
+    // if from <= 2 {found += 1}
 
-    found
+    (found,is_prime)
 }
 
 fn main(){
     let from = 0;
-    let to = 100000000;
+    let to = 500;
     let res = block_sieve(from, to);
-    println!("{}",res);
+
+    let from1 = 501;
+    let to1 = 1000;
+    let res1 = block_sieve(from1, to1);
+    println!("{} {} {}",res.0, res1.0, res.0+res1.0);
+
+    let printer = |val: Vec<bool> , f: i32| {
+        for i in 1..val.len() {
+            if val[i] {print!("{} ", i+(f as usize))}
+        }
+        println!();
+        println!();
+    };
+
+    printer(res.1, from);
+    printer(res1.1, from1);
+
 
 }
