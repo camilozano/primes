@@ -1,7 +1,10 @@
 use std::sync::mpsc::{Sender, Receiver};
 use std::sync::mpsc;
 use std::thread;
+use std::time::Instant;
 
+static NTHREADS: i32 = 8;
+static UPPER_LIMIT: usize = 100000000;
 
 fn sieve(from:usize, to:usize, tx: Sender<usize>) -> i32 {
 
@@ -35,16 +38,16 @@ fn sieve(from:usize, to:usize, tx: Sender<usize>) -> i32 {
     count
 }
 
-static NTHREADS: i32 = 8;
-fn main() {
-    
-    let upper = 100000000;
+fn prime_runner(upper: usize) -> u32 {
+
     let div = upper/(NTHREADS as usize);
     let mut count: u32 = 0;
+    let mut sum: u64 = 0;
 
     let (tx, rx): (Sender<usize>, Receiver<usize>) = mpsc::channel();
     let mut children = Vec::new();
 
+    let start = Instant::now();
 
     for i in (0..upper).step_by(div){
         let thread_tx = tx.clone();
@@ -52,8 +55,8 @@ fn main() {
         let to = i+div-1;
 
         let child = thread::spawn(move || {
-            let count = sieve(from,to,thread_tx);
-            println!("{}\tThread {} finished", count,i);
+            sieve(from,to,thread_tx);
+            // println!("{}\tThread {} finished", count,i);
         });
         children.push(child);
     }
@@ -62,20 +65,40 @@ fn main() {
     for child in children {
         child.join().expect("oops! the child thread panicked");
     }
+    let elapsed_time = start.elapsed().as_secs_f32();
+
     
 
     let mut list = Vec::new();
     drop(tx);
     for val in rx{
         count += 1;
+        sum += val as u64;
         list.push(val)
     }
 
     list.sort();
 
-    println!("{}",count);
+    println!("{} {} {}\n{:?}",elapsed_time,count,sum,&list[list.len()-10..]);
 
+    count
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn prime_check_10_to_8th(){
+        assert_eq!(prime_runner(100000000),5761455);
     }
+}
+
+
+fn main() {
+    
+    prime_runner(UPPER_LIMIT); 
+
+ }
 
 
 
