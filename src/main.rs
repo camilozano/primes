@@ -3,7 +3,7 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::Instant;
 
-static NTHREADS: i32 = 64;
+static NTHREADS: i32 = 8;
 static UPPER_LIMIT: i32 = 100000000;
 
 fn block_sieve(from: i32, to: i32, tx: Sender<usize>)-> i32 {
