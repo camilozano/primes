@@ -1,63 +1,38 @@
 
+fn sieve(from:usize, to:usize) -> Vec<usize>{
 
-fn block_sieve(from: i32, to: i32)-> (i32,Vec<bool>) {
+    let mut is_prime = vec![true; to+1];
+    let sqrtlmt = (to as f64).sqrt() as usize +1;
 
-    let memory_size = ((to-from+1)/2) as usize;
-    let mut is_prime: Vec<bool> = vec![true;memory_size];
+    let mut min = from;
+    if to > 2 {
+        is_prime[0] = false;
+        is_prime[1] = false;
+        min = 2;
+    }
 
-    // Maybe +1 check line 11
-    let range = (to as f64).sqrt() as i32 + 1;
-    
-    for i in (3..range).step_by(2){
-        if i >= 3*3 && i%3 == 0 {continue}
-        if i >= 5*5 && i%5 == 0 {continue}
-        if i >= 7*7 && i%7 == 0 {continue}
-        if i >= 11*11 && i%11 == 0 {continue}
-        if i >= 13*13 && i%13 == 0 {continue}
-        
-        let mut min = ((from+i-1)/i)*i;
-        if min < i*i {min = i*i}
-        if (min & 1) == 0 {min += i}
-
-        let mut j = min;
-        while j <= to{
-            let index = ((j-from)/2) as usize;
-            is_prime[index] = false;
-            j+= 2*i;
+    for idx in min..sqrtlmt {
+        if is_prime[idx]{
+            let mut multiple = idx*idx;
+            while multiple <= to {
+                is_prime[multiple] = false;
+                multiple += idx;
+            }
         }
-
-
     }
 
-    let mut found = 0;
-    for i in 0..memory_size {
-        found += is_prime[i] as i32;
+    let mut prime_list = Vec::new();
+    for i in from..is_prime.len() {
+        if is_prime[i] {
+            prime_list.push(i);
+        }
     }
-    // if from <= 2 {found += 1}
-
-    (found,is_prime)
+    prime_list
 }
 
-fn main(){
-    let from = 0;
-    let to = 500;
-    let res = block_sieve(from, to);
 
-    let from1 = 501;
-    let to1 = 1000;
-    let res1 = block_sieve(from1, to1);
-    println!("{} {} {}",res.0, res1.0, res.0+res1.0);
-
-    let printer = |val: Vec<bool> , f: i32| {
-        for i in 1..val.len() {
-            if val[i] {print!("{} ", i+(f as usize))}
-        }
-        println!();
-        println!();
-    };
-
-    printer(res.1, from);
-    printer(res1.1, from1);
-
+fn main() {
+    let val = sieve(101,500);
+    println!("{:?}",val.len());
 
 }
