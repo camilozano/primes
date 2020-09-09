@@ -32,7 +32,8 @@ fn sieve(from:usize, to:usize) -> Vec<usize>{
 
 
 fn main() {
-    let val = sieve(101,500);
-    println!("{:?}",val.len());
+    let val = sieve(0,100);
+    let val1 = sieve(101,500);
+    println!("{} {} {}",val.len(), val1.len(), val.len()+val1.len());
 
 }
