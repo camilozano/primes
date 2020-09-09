@@ -1,3 +1,7 @@
+use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc;
+use std::thread;
+
 
 fn sieve(from:usize, to:usize) -> Vec<usize>{
 
@@ -30,10 +34,22 @@ fn sieve(from:usize, to:usize) -> Vec<usize>{
     prime_list
 }
 
-
+static NTHREADS: i32 = 3;
 fn main() {
-    let val = sieve(0,100);
-    let val1 = sieve(101,500);
-    println!("{} {} {}",val.len(), val1.len(), val.len()+val1.len());
+    
+    let upper = 100000000;
+    let div = upper/(NTHREADS as usize);
+    let mut count = 0;
+
+
+    for i in (0..upper).step_by(div){
+        let from = i;
+        let to = i+div-1;
+        count += sieve(from, to).len();
+    }
+
+    println!("{}",count);
+
+
 
 }
