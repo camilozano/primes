@@ -4,7 +4,7 @@ use std::thread;
 use std::time::Instant;
 
 static NTHREADS: i32 = 8;
-static GROUP_DIVISIONS: i32 = 64;
+static GROUP_DIVISIONS: i32 = 128;
 static UPPER_LIMIT: i32 = 100000000;
 
 struct Range {
@@ -52,7 +52,7 @@ fn generate_ranges(upper_limit:i32, divisions: i32, threads: i32) -> Vec<Vec<Ran
 fn block_sieve(from: i32, to: i32, tx: Sender<usize>)-> i32 {
 
     let memory_size = ((to-from+1)/2) as usize;
-    let mut is_prime: Vec<bool> = vec![true;memory_size];
+    let mut is_prime: Vec<bool> = vec![true;memory_size+1];
 
     let range = (to as f64).sqrt() as i32 + 1;
     
@@ -153,8 +153,8 @@ mod tests {
 
 
 fn main() {
-    assert!(GROUP_DIVISIONS%2==0);
-    assert!(GROUP_DIVISIONS>=NTHREADS);
+    // assert!(GROUP_DIVISIONS%2==0);
+    // assert!(GROUP_DIVISIONS>=NTHREADS);
     prime_runner(UPPER_LIMIT, GROUP_DIVISIONS); 
  }
 
