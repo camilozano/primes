@@ -4,14 +4,56 @@ use std::thread;
 use std::time::Instant;
 
 static NTHREADS: i32 = 8;
+static GROUP_DIVISIONS: i32 = 64;
 static UPPER_LIMIT: i32 = 100000000;
+
+struct Range {
+    from: i32,
+    to: i32,
+}
+
+fn generate_ranges(upper_limit:i32, divisions: i32, threads: i32) -> Vec<Vec<Range>>{
+
+    let mut res: Vec<Vec<Range>> = Vec::new();
+    let mut ranges: Vec<Range> = Vec::new();
+    let mut ranges1: Vec<Range> = Vec::new();
+
+    let num_ranges = upper_limit/divisions;
+
+    for i in 0..divisions/2{
+        let r = Range{from: i*num_ranges, to:(i*num_ranges)+num_ranges-1};
+        ranges.push(r);
+    }
+
+    for i in divisions/2..divisions{
+        let r1 = Range{from: i*num_ranges, to:(i*num_ranges)+num_ranges-1};
+        ranges1.push(r1);
+    }
+    ranges1.reverse();
+
+    for _ in 0..threads{
+        res.push(Vec::new());
+    }
+
+    let mut thread_counter = 0;
+
+    for _ in 0..divisions/2{
+        res[thread_counter as usize].push(ranges1.pop().unwrap());
+        res[thread_counter as usize].push(ranges.pop().unwrap());
+        thread_counter = (thread_counter+1)%threads;
+    }
+
+
+    res
+
+}
+
 
 fn block_sieve(from: i32, to: i32, tx: Sender<usize>)-> i32 {
 
     let memory_size = ((to-from+1)/2) as usize;
     let mut is_prime: Vec<bool> = vec![true;memory_size];
 
-    // Maybe +1 check line 11
     let range = (to as f64).sqrt() as i32 + 1;
     
     for i in (3..range).step_by(2){
@@ -51,25 +93,28 @@ fn block_sieve(from: i32, to: i32, tx: Sender<usize>)-> i32 {
     found
 }
 
-fn prime_runner(upper: i32) -> u32 {
+fn prime_runner(upper: i32, div: i32) -> u32 {
 
-    let div: i32 = upper/NTHREADS;
     let mut count: u32 = 0;
     let mut sum: u64 = 0;
+    let mut ranges = generate_ranges(upper, div, NTHREADS);
 
     let (tx, rx): (Sender<usize>, Receiver<usize>) = mpsc::channel();
     let mut children = Vec::new();
 
     let start = Instant::now();
 
-    for i in (0..upper).step_by(div as usize){
+    for _ in 0..NTHREADS{
         let thread_tx = tx.clone();
-        let from: i32 = i as i32;
-        let to = i+div-1;
+        let thread_ranges = ranges.pop().unwrap();
 
         let child = thread::spawn(move || {
-            block_sieve(from,to,thread_tx);
-            // println!("{}\tThread {} finished", count,i);
+            for r in thread_ranges{
+                let thread_tx_loop = thread_tx.clone();
+                let from = r.from;
+                let to = r.to;
+                block_sieve(from,to,thread_tx_loop);
+            }
         });
         children.push(child);
     }
@@ -102,15 +147,15 @@ mod tests {
     use super::*;
     #[test]
     fn prime_check_10_to_8th(){
-        assert_eq!(prime_runner(100000000),5761455);
+        assert_eq!(prime_runner(100000000,64),5761455);
     }
 }
 
 
 fn main() {
-    
-    prime_runner(UPPER_LIMIT); 
-
+    assert!(GROUP_DIVISIONS%2==0);
+    assert!(GROUP_DIVISIONS>=NTHREADS);
+    prime_runner(UPPER_LIMIT, GROUP_DIVISIONS); 
  }
 
 
